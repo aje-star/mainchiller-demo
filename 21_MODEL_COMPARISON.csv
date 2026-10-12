@@ -1,0 +1,4 @@
+﻿model,dev_pairs,test_pairs,test_positive_rate,cv_pr_auc,test_pr_auc,selected_k,best_C,validation_chosen_threshold,test_detection_within180_rate,test_median_lead_within180_sec,test_alert_at_least180_early_rate,test_median_lead_at_least180_sec,test_normal_window_any_alert_rate,test_false_alerts_per_hour_sampled
+SENSOR_ONLY,45,12,0.15,0.2942160114405204,0.2139871446607655,40.0,0.1,0.7611887946316828,0.8333333333333334,180.0,0.8333333333333334,600.0,0.3333333333333333,5.5
+PATTERN_ONLY,45,12,0.15,0.23368696796889274,0.2634542592463526,,0.1,0.7316519105316248,0.08333333333333333,180.0,0.08333333333333333,270.0,0.0,0.0
+FUSION,45,12,0.15,0.3475908126341262,0.15574881703805835,40.0,0.3,0.9999877218334903,0.0,,0.0,,0.0,0.0
