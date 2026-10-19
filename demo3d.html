@@ -1,0 +1,3576 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>냉동기 알람 후 점검 지원 데모</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    body {
+      margin: 0;
+      background: #080f19;
+      color: #e6f1fc;
+      font: 14px/1.6 system-ui, -apple-system, sans-serif;
+    }
+
+    main {
+      max-width: 1640px;
+      margin: auto;
+      padding: 22px;
+    }
+
+    h1 {
+      margin: 5px 0;
+      font-size: 27px;
+    }
+
+    h2 {
+      margin: 6px 0;
+      font-size: 20px;
+    }
+
+    h3 {
+      margin: 8px 0;
+      font-size: 16px;
+    }
+
+    small {
+      color: #7cdcff;
+      letter-spacing: 1px;
+    }
+
+    button,
+    select,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button,
+    select {
+      padding: 8px 11px;
+      color: #e6f1fc;
+      background: #17324a;
+      border: 1px solid #42617b;
+      border-radius: 7px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #244a64;
+    }
+
+    button.active {
+      outline: 2px solid #75dbff;
+    }
+
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    summary:focus-visible {
+      outline: 3px solid #75dbff;
+    }
+
+    button:disabled,
+    input:disabled {
+      opacity: 0.5;
+    }
+
+    summary {
+      cursor: pointer;
+      color: #b6d6e9;
+    }
+
+    .muted {
+      color: #a5bacd;
+      font-size: 12px;
+    }
+
+    .source {
+      overflow-wrap: anywhere;
+    }
+
+    .badges,
+    .controls {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin: 12px 0;
+    }
+
+    .badges span {
+      padding: 3px 10px;
+      border: 1px solid #365a73;
+      border-radius: 20px;
+      font-size: 12px;
+    }
+
+    .notice {
+      padding: 10px 14px;
+      color: #f1d19c;
+      background: #302719;
+      border: 1px solid #685331;
+      border-radius: 10px;
+      font-size: 12px;
+    }
+
+    .panel {
+      min-width: 0;
+      padding: 15px;
+      background: #101e2e;
+      border: 1px solid #30465b;
+      border-radius: 13px;
+    }
+
+    .hub {
+      margin: 14px 0;
+    }
+
+    .hub-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .upload {
+      padding: 10px;
+      border: 1px solid #30465b;
+      border-radius: 9px;
+    }
+
+    .upload input[type="file"] {
+      max-width: 100%;
+      font-size: 12px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr) 330px;
+      align-items: start;
+      gap: 12px;
+    }
+
+    .equipment {
+      display: block;
+      width: 100%;
+      margin: 7px 0;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    #view {
+      position: relative;
+      height: clamp(450px, 65vh, 620px);
+      padding: 0;
+      overflow: hidden;
+    }
+
+    #view canvas {
+      display: block;
+      touch-action: none;
+    }
+
+    #viewTitle {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      z-index: 2;
+      width: fit-content;
+      max-width: calc(100% - 20px);
+      padding: 6px 10px;
+      background: #081522ed;
+      border-radius: 7px;
+      font-size: 11px;
+      pointer-events: none;
+    }
+
+    #labels {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .tag {
+      position: absolute;
+      padding: 3px 6px;
+      transform: translate(-50%, -50%);
+      color: #dff5ff;
+      background: #091627e8;
+      border: 1px solid #42657b;
+      border-radius: 5px;
+      white-space: nowrap;
+      font-size: 11px;
+    }
+
+    #stageTitle {
+      font-size: 17px;
+    }
+
+    #stageText {
+      margin: 6px 0 12px;
+      font-size: 12px;
+    }
+
+    #selectedName {
+      font-size: 21px;
+    }
+
+    .stat {
+      margin: 9px 0;
+      padding: 10px;
+      background: #0a1726;
+      border: 1px solid #30465b;
+      border-radius: 9px;
+    }
+
+    .stat-number {
+      margin: 4px 0 7px;
+      font-size: 20px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .track {
+      height: 10px;
+      overflow: hidden;
+      background: #26394c;
+      border-radius: 6px;
+    }
+
+    .fill {
+      height: 100%;
+      border-radius: 6px;
+    }
+
+    #evidence p {
+      margin: 8px 0;
+      font-size: 12px;
+    }
+
+    #evidence details {
+      font-size: 11px;
+    }
+
+    #selectionDetails {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #30465b;
+      font-size: 12px;
+    }
+
+    .progress {
+      height: 5px;
+      margin: 15px 0;
+      overflow: hidden;
+      background: #21364b;
+      border-radius: 5px;
+    }
+
+    #progressFill {
+      width: 0;
+      height: 100%;
+      background: #70d7ff;
+    }
+
+    #timeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 15px;
+    }
+
+    #timeline button {
+      font-size: 12px;
+    }
+
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    section.block {
+      margin-top: 15px;
+    }
+
+    #sensorSelect {
+      width: 100%;
+      margin: 10px 0;
+    }
+
+    #error {
+      margin: 15px 0;
+      padding: 13px;
+      color: #ffd3cd;
+      background: #391d28;
+      border: 1px solid #a65b68;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    form > label {
+      display: block;
+      margin: 11px 0;
+    }
+
+    form select,
+    form input[type="number"],
+    form textarea {
+      display: block;
+      width: 100%;
+      margin-top: 5px;
+      padding: 9px;
+      color: #e6f1fc;
+      background: #0b1726;
+      border: 1px solid #42617b;
+      border-radius: 7px;
+    }
+
+    form textarea {
+      resize: vertical;
+    }
+
+    #summaryOutput h3 {
+      margin-top: 15px;
+      padding-top: 11px;
+      border-top: 1px solid #30465b;
+    }
+
+    #recordMessage {
+      color: #90dfff;
+      overflow-wrap: anywhere;
+    }
+
+    label input[type="range"] {
+      max-width: 180px;
+      vertical-align: middle;
+    }
+
+    footer {
+      margin-top: 20px;
+    }
+
+    @media (max-width: 1100px) {
+      main {
+        padding: 15px;
+      }
+
+      .layout {
+        grid-template-columns: 140px minmax(0, 1fr) 285px;
+      }
+    }
+
+    @media (max-width: 850px) {
+      .layout,
+      .two,
+      .hub-grid {
+        grid-template-columns: 1fr;
+      }
+
+      #view {
+        height: 380px;
+      }
+
+      .equipment {
+        display: inline-block;
+        width: auto;
+        margin: 4px;
+      }
+
+      h1 {
+        font-size: 23px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <small>HYDROGEN STATION · INSPECTION SUPPORT</small>
+
+    <h1>냉동기 알람 후 점검 지원 데모</h1>
+
+    <p class="muted">
+      달성군 수소충전소 운영데이터의 과거 집계를 참고해 관찰 정보를 확인하고
+      담당자 점검 내용을 기록합니다.
+    </p>
+
+    <div class="badges">
+      <span>사건: 가상 시연</span>
+      <span>분석 근거: 과거 집계</span>
+      <span>모형: 개념 배치</span>
+    </div>
+
+    <div class="notice">
+      실제 설비 크기·위치·배관을 재현한 CAD가 아닙니다.
+      반투명 모형은 맥락 설명용입니다.
+      현장 센서 수신·자동 고장 진단·설비 제어 기능은 없습니다.
+    </div>
+
+    <div id="error" role="alert" hidden></div>
+
+    <section class="panel hub">
+      <small>STEP 1 · DATA</small>
+      <h3>분석 자료 연결</h3>
+
+      <p class="muted">
+        승인된 파일만 선택하세요.
+        CSV는 이 코드에서 외부 서버로 전송하지 않습니다.
+        새로고침하면 다시 선택해야 합니다.
+      </p>
+
+      <div id="uploads" class="hub-grid"></div>
+    </section>
+
+    <div class="controls">
+      <button id="play" type="button">재생</button>
+      <button id="reset" type="button">처음부터</button>
+      <button id="station" type="button">충전소 전체</button>
+      <button id="inside" type="button">냉동기 내부</button>
+
+      <label>
+        속도
+        <select id="speed">
+          <option value="0.5">0.5배</option>
+          <option value="1" selected>1배</option>
+          <option value="2">2배</option>
+        </select>
+      </label>
+
+      <label>
+        <input id="loop" type="checkbox" />
+        반복
+      </label>
+
+      <span class="muted">
+        드래그: 회전 · 휠: 확대 · 대상 선택 시 일시정지
+      </span>
+    </div>
+
+    <div class="layout">
+      <aside class="panel">
+        <small>EQUIPMENT</small>
+        <h3>분석 대상 설비</h3>
+        <div id="equipmentList"></div>
+
+        <p class="muted">
+          개념 배치입니다.
+          연결관·유체 흐름·고장 전파를 표시하지 않습니다.
+        </p>
+      </aside>
+
+      <section
+        id="view"
+        class="panel"
+        aria-label="3D 설비 개념 모형"
+      >
+        <div id="viewTitle">3D 준비 중</div>
+        <div id="labels"></div>
+      </section>
+
+      <aside class="panel">
+        <small id="stepLabel"></small>
+        <h2 id="stageTitle"></h2>
+        <p id="stageText"></p>
+
+        <small>SELECTED GROUP</small>
+        <h2 id="selectedName">충전소 전체</h2>
+
+        <div id="evidence"></div>
+
+        <details id="selectionDetails">
+          <summary>그룹 설명 · 연결 상태</summary>
+          <p id="selectedDescription"></p>
+          <div id="groupStatus">그룹 집계 미연결</div>
+          <div>현장 센서: 미연결</div>
+          <div>실제 운전 상태: 미평가</div>
+          <div>점검 결과: 아래 사건 기록에서 확인</div>
+        </details>
+      </aside>
+    </div>
+
+    <section class="panel block">
+      <small>DETAIL EXPLORER</small>
+      <h3>냉동기 내부 탐색</h3>
+
+      <div class="controls">
+        <button id="detailAll" type="button">내부 전체 보기</button>
+        <div id="partButtons" class="controls"></div>
+        <button id="nextPart" type="button">다음 관찰 그룹 →</button>
+
+        <label>
+          <input id="caseVisible" type="checkbox" checked />
+          개념 외함
+        </label>
+
+        <label>
+          분석 그룹 펼쳐 보기
+          <input
+            id="spread"
+            type="range"
+            min="0"
+            max="100"
+            value="0"
+          />
+          <span id="spreadValue">0%</span>
+        </label>
+      </div>
+
+      <p class="muted">
+        그룹 간 간격을 벌리는 시각적 기능이며 실제 정비 분해 절차가 아닙니다.
+      </p>
+    </section>
+
+    <div class="progress">
+      <div id="progressFill"></div>
+    </div>
+
+    <div id="timeline"></div>
+
+    <section class="panel block">
+      <small>OBSERVATION LOG</small>
+      <h3>가상 사건의 관찰 기록</h3>
+      <ul id="observationLog"></ul>
+
+      <p class="muted">
+        시간적 관찰 순서는 고장 원인이나 점검 우선순위를 확정하지 않습니다.
+      </p>
+    </section>
+
+    <section class="panel block">
+      <small>SENSOR EVIDENCE</small>
+      <h2>선택 그룹의 센서별 분석 근거</h2>
+      <p id="sensorContext" class="muted"></p>
+
+      <select
+        id="sensorSelect"
+        aria-label="분석 센서"
+        hidden
+      ></select>
+
+      <div id="sensorEvidence"></div>
+    </section>
+
+    <section id="inspectionSection" class="panel block">
+      <small>OBSERVATION REPORT & INSPECTION</small>
+      <h2>알람 관찰 요약 · 담당자 점검 기록</h2>
+
+      <div class="notice">
+        DEMO-001 전용 가상 기록입니다.
+        실제 정비 실적이나 현장 사건이 아닙니다.
+      </div>
+
+      <div class="controls">
+        <label>
+          시연 상황 선택
+          <select id="operatingState">
+            <option value="unknown">미확인</option>
+            <option value="charging">충전 중</option>
+            <option value="standby">대기 중</option>
+            <option value="starting">기동 중</option>
+            <option value="stopped">정지</option>
+            <option value="maintenance">정비 중</option>
+          </select>
+        </label>
+
+        <span class="muted">
+          실제 상태 자동 판정 아님 · 집계를 상태별로 필터링하지 않음
+        </span>
+      </div>
+
+      <div class="controls">
+        <button id="capture" type="button">현재 단계 요약하기</button>
+        <button id="loadRecord" type="button">저장 기록 불러오기</button>
+        <button id="exportRecord" type="button">JSON 내보내기</button>
+      </div>
+
+      <div class="two">
+        <div class="panel">
+          <h3>관찰 정보와 과거 근거</h3>
+
+          <div id="summaryOutput">
+            요약 버튼을 누르면 현재 단계의 정보를 가져옵니다.
+          </div>
+        </div>
+
+        <form id="inspectionForm" class="panel">
+          <h3>담당자 확인 내용 — 가상 입력</h3>
+
+          <label>
+            고장 확인 여부
+            <select id="finding">
+              <option value="unchecked">미점검</option>
+              <option value="unresolved">점검했으나 원인 미확인</option>
+              <option value="confirmed">고장 확인 — 가상 입력</option>
+              <option value="not_confirmed">고장 확인되지 않음</option>
+            </select>
+          </label>
+
+          <label>
+            확인된 부위
+            <select id="component">
+              <option value="">미확인 / 해당 없음</option>
+              <option value="COMP1">COMP1</option>
+              <option value="ECONOMIZER1">ECONOMIZER1</option>
+              <option value="FLUID_PUMP">FLUID_PUMP</option>
+              <option value="OTHER">기타</option>
+            </select>
+          </label>
+
+          <label>
+            조치
+            <select id="action">
+              <option value="pending">미조치 / 미기록</option>
+              <option value="checked">상태 확인</option>
+              <option value="monitor">추가 관찰</option>
+              <option value="repair">수리 — 가상</option>
+              <option value="replace">부품 교체 — 가상</option>
+              <option value="other">기타</option>
+            </select>
+          </label>
+
+          <label>
+            충전 영향
+            <select id="impact">
+              <option value="unknown">미확인</option>
+              <option value="none">영향 없음 — 가상</option>
+              <option value="delayed">지연 — 가상</option>
+              <option value="stopped">중단 — 가상</option>
+            </select>
+          </label>
+
+          <label>
+            중단 시간 — 분
+            <input
+              id="downtime"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="미확인이면 비워두기"
+            />
+          </label>
+
+          <label>
+            점검 메모
+            <textarea
+              id="note"
+              rows="3"
+              maxlength="1500"
+              placeholder="시연 내용만 입력하세요. 개인정보·현장 민감정보 입력 금지"
+            ></textarea>
+          </label>
+
+          <label>
+            <input id="demoConsent" type="checkbox" required />
+            실제 정비 실적이 아닌 가상 기록임을 확인합니다.
+          </label>
+
+          <button type="submit">이 브라우저에 기록 저장</button>
+        </form>
+      </div>
+
+      <p
+        id="recordMessage"
+        role="status"
+        aria-live="polite"
+      ></p>
+
+      <p class="muted">
+        DEMO-001 한 건을 저장하며 다시 저장하면 덮어씁니다.
+        팀원 간 자동 공유되지 않습니다.
+        요약은 생성 당시의 스냅샷이며 파일·선택 변경 후에는 다시 생성하세요.
+      </p>
+    </section>
+
+    <footer class="muted">
+      3D·사건: 개념 시연 / CSV: 과거 집계 / 현장 센서: 미연결
+    </footer>
+  </main>
+
+  <script>
+    window.reportDemoError = function (error) {
+      const element = document.getElementById("error");
+
+      element.hidden = false;
+      element.textContent =
+        "실행 오류: " +
+        (error?.message || String(error)) +
+        "\n이 메시지를 캡처해 알려주세요.";
+    };
+
+    window.addEventListener("error", event => {
+      window.reportDemoError(event.error || event.message);
+    });
+
+    window.addEventListener("unhandledrejection", event => {
+      window.reportDemoError(event.reason);
+    });
+  </script>
+
+  <script type="module">
+    async function start() {
+      const THREE = await import("three");
+
+      const { OrbitControls } = await import(
+        "three/addons/controls/OrbitControls.js"
+      );
+
+      const $ = id => document.getElementById(id);
+
+      function addText(parent, tag, value, className = "") {
+        const element = document.createElement(tag);
+        element.textContent = value;
+        element.className = className;
+        parent.appendChild(element);
+        return element;
+      }
+
+      const equipment = [
+        {
+          name: "냉동기",
+          position: [-5.2, 0, 0.4],
+          size: [2.6, 2.1, 1.7],
+          description: "MainChiller 상세 분석 대상입니다."
+        },
+        {
+          name: "냉각수공급장치",
+          position: [-5.2, 0, -3],
+          size: [2.3, 1.7, 1.6],
+          description:
+            "독립 분석 설비입니다. 현재 센서 상태는 연결하지 않았습니다."
+        },
+        {
+          name: "인입판넬",
+          position: [-7.1, 0, 4],
+          size: [1.8, 2.4, 1],
+          description: "전기반 형태의 개념 모형입니다."
+        },
+        {
+          name: "충전기",
+          position: [6.2, 0, 2.4],
+          size: [1.2, 2.2, 1],
+          description: "충전 디스펜서의 개념 모형입니다."
+        },
+        {
+          name: "수소압축기",
+          position: [-0.8, 0, -1],
+          size: [2.6, 1.7, 1.6],
+          description:
+            "냉동기 내부 COMP1과 다른 충전소 설비입니다."
+        },
+        {
+          name: "우선순위 제어반",
+          position: [3, 0, -1],
+          size: [1.8, 2.1, 1],
+          description:
+            "PRIORITY 대응 개념 모형이며 실제 외형·배치는 확인되지 않았습니다."
+        }
+      ];
+
+      const parts = [
+        {
+          name: "COMP1",
+          time: "15:07:28",
+          lead: 312,
+          position: [-2.8, 1.1, 0],
+          description:
+            "냉동기 내부 압축기 관련 분석 그룹입니다. 충전소 수소압축기와 구분합니다."
+        },
+        {
+          name: "ECONOMIZER1",
+          time: "15:08:59",
+          lead: 221,
+          position: [0, 1.1, 0],
+          description:
+            "냉동기 내부 이코노마이저 관련 분석 그룹입니다."
+        },
+        {
+          name: "FLUID_PUMP",
+          time: "15:10:20",
+          lead: 140,
+          position: [2.8, 1.1, 0],
+          description:
+            "냉동기 내부 열전달 유체 펌프 관련 분석 그룹입니다."
+        }
+      ];
+
+      const stages = [
+        [
+          "충전소 전체 조망",
+          "분석 대상 6개 설비의 개념 배치입니다.",
+          "station",
+          -1
+        ],
+        [
+          "냉동기 상세 분석",
+          "충전소 설비에서 냉동기 분석으로 이동합니다.",
+          "station",
+          0
+        ],
+        [
+          "냉동기 내부 관찰",
+          "세 그룹만 표시한 분석 개념도이며 전체 부품도가 아닙니다.",
+          "detail",
+          -1
+        ],
+        [
+          "COMP1 변화 관찰",
+          "15:07:28 · 알람 312초 전 · 가상 관찰",
+          "detail",
+          0
+        ],
+        [
+          "ECONOMIZER1 변화 관찰",
+          "15:08:59 · 알람 221초 전 · 가상 관찰",
+          "detail",
+          1
+        ],
+        [
+          "FLUID_PUMP 변화 관찰",
+          "15:10:20 · 알람 140초 전 · 가상 관찰",
+          "detail",
+          2
+        ],
+        [
+          "종합 알람 발생",
+          "15:12:40 · DEMO-001 · 가상 종합 알람",
+          "detail",
+          -1
+        ],
+        [
+          "직전 변화 복기",
+          "관찰 시간 순서이며 고장 전파 경로가 아닙니다.",
+          "detail",
+          -1
+        ],
+        [
+          "담당자 점검 기록",
+          "관찰 요약을 확인하고 실제 확인 내용과 구분해 기록합니다.",
+          "station",
+          0
+        ]
+      ];
+
+      const duration = 6000;
+      const total = duration * stages.length;
+
+      let elapsed = 0;
+      let playing = false;
+      let mode = "station";
+      let selectedEquipment = -1;
+      let selectedPart = -1;
+      let lastStage = -1;
+      let lastTime = null;
+      let moving = false;
+
+      let groupData = new Map();
+      let sensorData = [];
+      let sequenceData = null;
+
+      let groupFile = "";
+      let sensorFile = "";
+      let snapshot = null;
+
+      let evidenceKey = "";
+      let sensorKey = "";
+
+      const loadVersions = {
+        group: 0,
+        sensor: 0,
+        sequence: 0
+      };
+
+      // ──────────────────────────────
+      // 3D 기본 구성
+      // ──────────────────────────────
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color("#0b1624");
+
+      const camera = new THREE.PerspectiveCamera(
+        45,
+        1,
+        0.1,
+        150
+      );
+
+      camera.position.set(13, 12, 16);
+
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true
+      });
+
+      renderer.setPixelRatio(
+        Math.min(window.devicePixelRatio, 2)
+      );
+
+      $("view").appendChild(renderer.domElement);
+
+      const controls = new OrbitControls(
+        camera,
+        renderer.domElement
+      );
+
+      controls.enableDamping = true;
+      controls.target.set(0, 1, 0);
+      controls.minDistance = 3;
+      controls.maxDistance = 40;
+      controls.maxPolarAngle = Math.PI / 2 - 0.04;
+
+      scene.add(
+        new THREE.HemisphereLight(
+          0xc8eaff,
+          0x344454,
+          3
+        )
+      );
+
+      const light = new THREE.DirectionalLight(
+        0xffffff,
+        3
+      );
+
+      light.position.set(6, 12, 8);
+      scene.add(light);
+
+      const stationGroup = new THREE.Group();
+      const detailGroup = new THREE.Group();
+
+      scene.add(stationGroup, detailGroup);
+      detailGroup.visible = false;
+
+      stationGroup.add(
+        new THREE.GridHelper(
+          22,
+          22,
+          0x34536e,
+          0x1b2d40
+        )
+      );
+
+      detailGroup.add(
+        new THREE.GridHelper(
+          13,
+          13,
+          0x34536e,
+          0x1b2d40
+        )
+      );
+
+      const stationPickables = [];
+      const equipmentGroups = [];
+      const partMeshes = [];
+      const labels = [];
+
+      const target = new THREE.Vector3(0, 1, 0);
+      const destination = new THREE.Vector3(13, 12, 16);
+
+      function makeMaterial(color = 0x54758e, opacity = 1) {
+        return new THREE.MeshStandardMaterial({
+          color,
+          metalness: 0.3,
+          roughness: 0.45,
+          transparent: opacity < 1,
+          opacity,
+          depthWrite: opacity === 1
+        });
+      }
+
+      function addMesh(
+        parent,
+        geometry,
+        position,
+        color = 0x54758e,
+        equipmentIndex = null,
+        opacity = 1
+      ) {
+        const object = new THREE.Mesh(
+          geometry,
+          makeMaterial(color, opacity)
+        );
+
+        object.position.set(...position);
+        parent.add(object);
+
+        if (equipmentIndex !== null) {
+          object.userData.equipment = equipmentIndex;
+          object.userData.baseColor =
+            object.material.color.clone();
+
+          stationPickables.push(object);
+        }
+
+        return object;
+      }
+
+      function addBox(
+        parent,
+        size,
+        position,
+        color,
+        equipmentIndex = null,
+        opacity = 1
+      ) {
+        return addMesh(
+          parent,
+          new THREE.BoxGeometry(...size),
+          position,
+          color,
+          equipmentIndex,
+          opacity
+        );
+      }
+
+      function addLabel(
+        parent,
+        object,
+        name,
+        offset,
+        kind,
+        index
+      ) {
+        const element = document.createElement("span");
+        element.className = "tag";
+        element.textContent = name;
+
+        $("labels").appendChild(element);
+
+        labels.push({
+          parent,
+          object,
+          element,
+          offset: new THREE.Vector3(...offset),
+          kind,
+          index
+        });
+      }
+
+      equipment.forEach((item, index) => {
+        const group = new THREE.Group();
+        group.position.set(...item.position);
+
+        stationGroup.add(group);
+        equipmentGroups.push(group);
+
+        addBox(
+          group,
+          [
+            item.size[0] + 0.3,
+            0.18,
+            item.size[2] + 0.3
+          ],
+          [0, 0.15, 0],
+          0x283b4f,
+          index
+        );
+
+        const body = addBox(
+          group,
+          item.size,
+          [0, item.size[1] / 2 + 0.25, 0],
+          0x54758e,
+          index
+        );
+
+        addBox(
+          group,
+          [item.size[0] * 0.5, 0.4, 0.06],
+          [
+            0,
+            item.size[1] * 0.7,
+            item.size[2] / 2 + 0.04
+          ],
+          0x193247,
+          index
+        );
+
+        addLabel(
+          stationGroup,
+          body,
+          item.name,
+          [0, item.size[1] / 2 + 0.4, 0],
+          "equipment",
+          index
+        );
+      });
+
+      function addZone(x, z, width, depth, color) {
+        const floor = new THREE.Mesh(
+          new THREE.PlaneGeometry(width, depth),
+          new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 0.13,
+            depthWrite: false,
+            side: THREE.DoubleSide
+          })
+        );
+
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.set(x, 0.025, z);
+
+        stationGroup.add(floor);
+      }
+
+      addZone(-5.2, -1.4, 4, 7, 0x429ac2);
+      addZone(0.8, -3, 7.4, 7, 0x6686bd);
+      addZone(6.2, 3.8, 4, 6.5, 0x529c88);
+      addZone(-7.1, 4.1, 3, 3, 0xa58a52);
+
+      // 설명용 배경: 실제 설비 존재·수량·배치를 주장하지 않음
+      const supply = addBox(
+        stationGroup,
+        [2.2, 1.2, 1.2],
+        [-7, 0.7, -6],
+        0x536273,
+        null,
+        0.35
+      );
+
+      addLabel(
+        stationGroup,
+        supply,
+        "공급원 · 배경",
+        [0, 1, 0],
+        "background",
+        -1
+      );
+
+      const storage = new THREE.Group();
+      storage.position.set(0.7, 0, -5.3);
+      stationGroup.add(storage);
+
+      [-1, 0, 1].forEach(x => {
+        const tank = addMesh(
+          storage,
+          new THREE.CylinderGeometry(
+            0.35,
+            0.35,
+            2.1,
+            24
+          ),
+          [x, 0.85, 0],
+          0x536273,
+          null,
+          0.35
+        );
+
+        tank.rotation.x = Math.PI / 2;
+      });
+
+      addLabel(
+        stationGroup,
+        storage,
+        "저장 영역 · 배경",
+        [0, 1.8, 0],
+        "background",
+        -1
+      );
+
+      const vehicle = addBox(
+        stationGroup,
+        [1.6, 0.6, 3],
+        [6.2, 0.65, 5.8],
+        0x536273,
+        null,
+        0.35
+      );
+
+      addBox(
+        stationGroup,
+        [1.35, 0.55, 1.5],
+        [6.2, 1.1, 5.65],
+        0x536273,
+        null,
+        0.35
+      );
+
+      addLabel(
+        stationGroup,
+        vehicle,
+        "차량 · 배경",
+        [0, 1.3, 0],
+        "background",
+        -1
+      );
+
+      // 냉동기 내부 분석 그룹 개념 모형
+      addBox(
+        detailGroup,
+        [9, 0.25, 3.2],
+        [0, 0.2, 0],
+        0x283b4f
+      );
+
+      parts.forEach((part, index) => {
+        let geometry;
+
+        if (index === 2) {
+          geometry = new THREE.SphereGeometry(
+            0.65,
+            24,
+            16
+          );
+        } else {
+          geometry = new THREE.CylinderGeometry(
+            0.6,
+            0.6,
+            1.5,
+            32
+          );
+
+          if (index === 0) {
+            geometry.rotateZ(Math.PI / 2);
+          }
+        }
+
+        const object = addMesh(
+          detailGroup,
+          geometry,
+          part.position
+        );
+
+        object.userData.part = index;
+        partMeshes.push(object);
+
+        addLabel(
+          detailGroup,
+          object,
+          part.name,
+          [0, 1.2, 0],
+          "part",
+          index
+        );
+
+        const support = addBox(
+          object,
+          [1.1, 0.2, 1.1],
+          [0, -0.72, 0],
+          0x314d65
+        );
+
+        support.userData.part = index;
+
+        if (index === 1) {
+          [-0.45, 0.45].forEach(y => {
+            const ring = addMesh(
+              object,
+              new THREE.TorusGeometry(
+                0.62,
+                0.045,
+                8,
+                32
+              ),
+              [0, y, 0],
+              0x8aa7b8
+            );
+
+            ring.rotation.x = Math.PI / 2;
+            ring.userData.part = index;
+          });
+        }
+      });
+
+      const caseGroup = new THREE.Group();
+      detailGroup.add(caseGroup);
+
+      const caseGeometry = new THREE.BoxGeometry(
+        9.4,
+        3.3,
+        3.3
+      );
+
+      const casing = new THREE.LineSegments(
+        new THREE.EdgesGeometry(caseGeometry),
+        new THREE.LineBasicMaterial({
+          color: 0x70b3d0,
+          transparent: true,
+          opacity: 0.6
+        })
+      );
+
+      casing.position.set(0, 1.85, 0);
+      caseGroup.add(casing);
+
+      // ──────────────────────────────
+      // 카메라·선택·단계 이동
+      // ──────────────────────────────
+
+      function moveCamera(lookAt, offset) {
+        target.copy(lookAt);
+        destination.copy(lookAt).add(offset);
+        moving = true;
+      }
+
+      function setMode(value) {
+        mode = value;
+        stationGroup.visible = value === "station";
+        detailGroup.visible = value === "detail";
+      }
+
+      function showStation() {
+        setMode("station");
+        selectedEquipment = -1;
+        selectedPart = -1;
+
+        moveCamera(
+          new THREE.Vector3(0, 1, 0),
+          new THREE.Vector3(13, 11, 16)
+        );
+      }
+
+      function showDetail() {
+        setMode("detail");
+        selectedEquipment = 0;
+        selectedPart = -1;
+
+        moveCamera(
+          new THREE.Vector3(0, 1, 0),
+          new THREE.Vector3(7, 6, 10)
+        );
+      }
+
+      function focusEquipment(index) {
+        setMode("station");
+        selectedEquipment = index;
+        selectedPart = -1;
+
+        const position =
+          equipmentGroups[index].position.clone();
+
+        position.y = 1;
+
+        moveCamera(
+          position,
+          new THREE.Vector3(6, 4, 7)
+        );
+      }
+
+      function focusPart(index) {
+        setMode("detail");
+        selectedEquipment = 0;
+        selectedPart = index;
+
+        moveCamera(
+          partMeshes[index].position,
+          new THREE.Vector3(4, 3, 6)
+        );
+      }
+
+      controls.addEventListener("start", () => {
+        moving = false;
+      });
+
+      equipment.forEach((item, index) => {
+        const button = addText(
+          $("equipmentList"),
+          "button",
+          item.name,
+          "equipment"
+        );
+
+        button.type = "button";
+
+        button.onclick = () => {
+          playing = false;
+          focusEquipment(index);
+        };
+      });
+
+      parts.forEach((part, index) => {
+        const button = addText(
+          $("partButtons"),
+          "button",
+          part.name
+        );
+
+        button.type = "button";
+
+        button.onclick = () => {
+          playing = false;
+          focusPart(index);
+        };
+      });
+
+      stages.forEach((stage, index) => {
+        const button = addText(
+          $("timeline"),
+          "button",
+          `${index + 1}. ${stage[0]}`
+        );
+
+        button.type = "button";
+
+        button.onclick = () => {
+          elapsed = index * duration;
+          lastStage = -1;
+          playing = false;
+        };
+      });
+
+      function reset() {
+        elapsed = 0;
+        lastStage = -1;
+        showStation();
+      }
+
+      $("play").onclick = () => {
+        if (elapsed >= total) reset();
+        playing = !playing;
+      };
+
+      $("reset").onclick = () => {
+        reset();
+        playing = false;
+      };
+
+      $("station").onclick = () => {
+        playing = false;
+        showStation();
+      };
+
+      $("inside").onclick = () => {
+        playing = false;
+        showDetail();
+      };
+
+      $("detailAll").onclick = () => {
+        playing = false;
+        showDetail();
+      };
+
+      $("nextPart").onclick = () => {
+        playing = false;
+        focusPart((selectedPart + 1) % parts.length);
+      };
+
+      $("caseVisible").onchange = event => {
+        caseGroup.visible = event.target.checked;
+      };
+
+      $("spread").oninput = event => {
+        playing = false;
+
+        const amount = Number(event.target.value) / 100;
+
+        $("spreadValue").textContent =
+          Math.round(amount * 100) + "%";
+
+        partMeshes.forEach((object, index) => {
+          object.position.set(...parts[index].position);
+          object.position.x *= 1 + amount * 0.35;
+          object.position.y +=
+            amount * (index === 1 ? 0.55 : 0.2);
+        });
+
+        showDetail();
+      };
+
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+
+      let pointerDown = null;
+
+      renderer.domElement.addEventListener(
+        "pointerdown",
+        event => {
+          pointerDown = [
+            event.clientX,
+            event.clientY
+          ];
+        }
+      );
+
+      renderer.domElement.addEventListener(
+        "pointerup",
+        event => {
+          if (!pointerDown) return;
+
+          const distance = Math.hypot(
+            event.clientX - pointerDown[0],
+            event.clientY - pointerDown[1]
+          );
+
+          pointerDown = null;
+
+          if (distance > 5) return;
+
+          const rect =
+            renderer.domElement.getBoundingClientRect();
+
+          pointer.set(
+            ((event.clientX - rect.left) / rect.width) * 2 - 1,
+            -((event.clientY - rect.top) / rect.height) * 2 + 1
+          );
+
+          raycaster.setFromCamera(pointer, camera);
+
+          const targets =
+            mode === "station"
+              ? stationPickables
+              : partMeshes;
+
+          const hit = raycaster.intersectObjects(
+            targets,
+            true
+          )[0];
+
+          if (!hit) return;
+
+          playing = false;
+
+          if (mode === "station") {
+            focusEquipment(hit.object.userData.equipment);
+          } else {
+            focusPart(hit.object.userData.part);
+          }
+        }
+      );
+
+      new ResizeObserver(() => {
+        const width = $("view").clientWidth;
+        const height = $("view").clientHeight;
+
+        if (!width || !height) return;
+
+        renderer.setSize(width, height);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      }).observe($("view"));
+
+      // ──────────────────────────────
+      // CSV 파싱·검증
+      // ──────────────────────────────
+
+      function parseCSV(raw) {
+        const rows = [];
+
+        let row = [];
+        let field = "";
+        let quoted = false;
+
+        const source = raw.replace(/^\uFEFF/, "");
+
+        for (let i = 0; i < source.length; i++) {
+          const character = source[i];
+
+          if (character === '"') {
+            if (quoted && source[i + 1] === '"') {
+              field += '"';
+              i++;
+            } else {
+              quoted = !quoted;
+            }
+          } else if (character === "," && !quoted) {
+            row.push(field);
+            field = "";
+          } else if (
+            (character === "\n" || character === "\r") &&
+            !quoted
+          ) {
+            if (
+              character === "\r" &&
+              source[i + 1] === "\n"
+            ) {
+              i++;
+            }
+
+            row.push(field);
+
+            if (row.some(value => value.trim() !== "")) {
+              rows.push(row);
+            }
+
+            row = [];
+            field = "";
+          } else {
+            field += character;
+          }
+        }
+
+        if (quoted) {
+          throw new Error("CSV 따옴표가 닫히지 않았습니다.");
+        }
+
+        row.push(field);
+
+        if (row.some(value => value.trim() !== "")) {
+          rows.push(row);
+        }
+
+        if (rows.length < 2) {
+          throw new Error("헤더와 데이터가 필요합니다.");
+        }
+
+        const headers = rows.shift().map(value => value.trim());
+
+        if (new Set(headers).size !== headers.length) {
+          throw new Error("중복 헤더가 있습니다.");
+        }
+
+        const records = rows.map(cells => {
+          if (cells.length !== headers.length) {
+            throw new Error("헤더와 데이터의 컬럼 수가 다릅니다.");
+          }
+
+          return Object.fromEntries(
+            headers.map((header, index) => [
+              header,
+              cells[index].trim()
+            ])
+          );
+        });
+
+        return {
+          headers,
+          rows: records
+        };
+      }
+
+      function requireColumns(table, names) {
+        names.forEach(name => {
+          if (!table.headers.includes(name)) {
+            throw new Error("필수 컬럼 없음: " + name);
+          }
+        });
+      }
+
+      function readNumber(record, key, integer = false) {
+        if (
+          record[key] === undefined ||
+          record[key] === ""
+        ) {
+          throw new Error("빈 항목: " + key);
+        }
+
+        const value = Number(record[key]);
+
+        if (
+          !Number.isFinite(value) ||
+          value < 0 ||
+          (integer && !Number.isInteger(value))
+        ) {
+          throw new Error("숫자 오류: " + key);
+        }
+
+        return value;
+      }
+
+      function normalizeSequence(value) {
+        return value
+          .trim()
+          .split(/\s*(?:->|→)\s*/)
+          .map(step => step.trim())
+          .join(" -> ");
+      }
+
+      function validateCSV(raw, type) {
+        const table = parseCSV(raw);
+        const seen = new Set();
+
+        if (type === "sequence") {
+          requireColumns(table, [
+            "sequence",
+            "failure_count",
+            "normal_count",
+            "failure_rate",
+            "normal_rate"
+          ]);
+
+          const rows = new Map();
+
+          let failureTotal = 0;
+          let normalTotal = 0;
+
+          table.rows.forEach(record => {
+            const key = normalizeSequence(record.sequence);
+
+            if (!key || seen.has(key)) {
+              throw new Error("빈 시퀀스 또는 중복 시퀀스입니다.");
+            }
+
+            seen.add(key);
+
+            const item = {
+              failureCount: readNumber(
+                record,
+                "failure_count",
+                true
+              ),
+              normalCount: readNumber(
+                record,
+                "normal_count",
+                true
+              ),
+              failureRate: readNumber(
+                record,
+                "failure_rate"
+              ),
+              normalRate: readNumber(
+                record,
+                "normal_rate"
+              )
+            };
+
+            if (
+              item.failureRate > 1 ||
+              item.normalRate > 1
+            ) {
+              throw new Error("비율은 0~1이어야 합니다.");
+            }
+
+            rows.set(key, item);
+
+            failureTotal += item.failureCount;
+            normalTotal += item.normalCount;
+          });
+
+          if (!failureTotal || !normalTotal) {
+            throw new Error("양쪽 표본 수가 필요합니다.");
+          }
+
+          for (const item of rows.values()) {
+            const failureDifference = Math.abs(
+              item.failureCount / failureTotal -
+              item.failureRate
+            );
+
+            const normalDifference = Math.abs(
+              item.normalCount / normalTotal -
+              item.normalRate
+            );
+
+            if (
+              failureDifference > 0.00001 ||
+              normalDifference > 0.00001
+            ) {
+              throw new Error(
+                "전체 빈도표의 합계와 비율이 다릅니다. " +
+                "행을 삭제하지 않은 전체 파일을 선택하세요."
+              );
+            }
+          }
+
+          return {
+            rows,
+            failureTotal,
+            normalTotal
+          };
+        }
+
+        requireColumns(table, [
+          "group",
+          "failure_events",
+          "normal_events",
+          "matched_pairs",
+          ...(type === "sensor"
+            ? [
+                "sensor",
+                "failure_early180_events",
+                "normal_early180_events"
+              ]
+            : [
+                "failure_rate",
+                "normal_rate"
+              ])
+        ]);
+
+        const rows = table.rows.map(record => {
+          const key =
+            record.group +
+            (type === "sensor" ? "|" + record.sensor : "");
+
+          if (
+            !record.group ||
+            (type === "sensor" && !record.sensor) ||
+            seen.has(key)
+          ) {
+            throw new Error(
+              "빈 그룹·센서 또는 중복 항목이 있습니다."
+            );
+          }
+
+          seen.add(key);
+
+          const item = {
+            group: record.group,
+            sensor: record.sensor,
+            pairs: readNumber(
+              record,
+              "matched_pairs",
+              true
+            ),
+            failureCount: readNumber(
+              record,
+              "failure_events",
+              true
+            ),
+            normalCount: readNumber(
+              record,
+              "normal_events",
+              true
+            )
+          };
+
+          if (
+            !item.pairs ||
+            item.failureCount > item.pairs ||
+            item.normalCount > item.pairs
+          ) {
+            throw new Error("표본 수 또는 건수 오류입니다.");
+          }
+
+          if (type === "sensor") {
+            item.failureEarly = readNumber(
+              record,
+              "failure_early180_events",
+              true
+            );
+
+            item.normalEarly = readNumber(
+              record,
+              "normal_early180_events",
+              true
+            );
+
+            if (
+              item.failureEarly > item.failureCount ||
+              item.normalEarly > item.normalCount
+            ) {
+              throw new Error("180초 이전 건수 오류입니다.");
+            }
+          } else {
+            const failureRate = readNumber(
+              record,
+              "failure_rate"
+            );
+
+            const normalRate = readNumber(
+              record,
+              "normal_rate"
+            );
+
+            if (
+              failureRate > 1 ||
+              normalRate > 1 ||
+              Math.abs(
+                failureRate -
+                item.failureCount / item.pairs
+              ) > 0.001 ||
+              Math.abs(
+                normalRate -
+                item.normalCount / item.pairs
+              ) > 0.001
+            ) {
+              throw new Error("건수와 비율이 일치하지 않습니다.");
+            }
+          }
+
+          return item;
+        });
+
+        parts.forEach(part => {
+          if (!rows.some(row => row.group === part.name)) {
+            throw new Error(
+              "필요한 그룹이 없습니다: " + part.name
+            );
+          }
+        });
+
+        if (type === "group") {
+          return new Map(
+            rows.map(row => [row.group, row])
+          );
+        }
+
+        return rows;
+      }
+
+      // ──────────────────────────────
+      // 파일 연결 UI
+      // ──────────────────────────────
+
+      const uploadDefinitions = [
+        ["group", "그룹 집계", "15_GROUP_COMPARISON.csv"],
+        ["sensor", "센서 집계", "15_SENSOR_COMPARISON.csv"],
+        [
+          "sequence",
+          "동일 순서 집계",
+          "17_SEQUENCE_FREQUENCIES.csv"
+        ]
+      ];
+
+      uploadDefinitions.forEach(([type, title, filename]) => {
+        const details = document.createElement("details");
+        details.className = "upload";
+        details.open = true;
+
+        const heading = addText(
+          details,
+          "summary",
+          title + " · 미연결"
+        );
+
+        addText(details, "p", filename, "muted source");
+
+        const approval = document.createElement("label");
+        approval.className = "muted";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+
+        approval.append(
+          checkbox,
+          document.createTextNode(
+            " 승인된 집계 파일임을 확인"
+          )
+        );
+
+        details.appendChild(approval);
+
+        const area = document.createElement("div");
+        area.className = "controls";
+
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = ".csv,text/csv";
+        fileInput.disabled = true;
+        fileInput.setAttribute(
+          "aria-label",
+          title + " CSV 선택"
+        );
+
+        const clearButton = document.createElement("button");
+        clearButton.type = "button";
+        clearButton.textContent = "연결 해제";
+
+        area.append(fileInput, clearButton);
+        details.appendChild(area);
+
+        const message = addText(
+          details,
+          "p",
+          "승인 확인 후 파일을 선택하세요.",
+          "muted"
+        );
+
+        message.setAttribute("role", "status");
+
+        $("uploads").appendChild(details);
+
+        checkbox.onchange = () => {
+          fileInput.disabled = !checkbox.checked;
+        };
+
+        function disconnect() {
+          loadVersions[type]++;
+
+          if (type === "group") {
+            groupData = new Map();
+            groupFile = "";
+          } else if (type === "sensor") {
+            sensorData = [];
+            sensorFile = "";
+          } else {
+            sequenceData = null;
+          }
+
+          fileInput.value = "";
+          heading.textContent = title + " · 미연결";
+
+          evidenceKey = "";
+          sensorKey = "";
+
+          message.textContent =
+            "연결 해제됨. 이미 생성한 요약은 그대로 유지됩니다.";
+        }
+
+        clearButton.onclick = disconnect;
+
+        fileInput.onchange = async () => {
+          const file = fileInput.files[0];
+
+          if (!file || !checkbox.checked) return;
+
+          const version = ++loadVersions[type];
+
+          message.textContent = "파일을 검증하고 있습니다.";
+
+          try {
+            if (file.size > 2 * 1024 * 1024) {
+              throw new Error(
+                "2MB 이하의 집계 CSV를 선택하세요."
+              );
+            }
+
+            const raw = await file.text();
+            const result = validateCSV(raw, type);
+
+            if (version !== loadVersions[type]) return;
+
+            if (type === "group") {
+              groupData = result;
+              groupFile = file.name;
+            } else if (type === "sensor") {
+              sensorData = result;
+              sensorFile = file.name;
+            } else {
+              sequenceData = {
+                ...result,
+                fileName: file.name
+              };
+            }
+
+            evidenceKey = "";
+            sensorKey = "";
+
+            heading.textContent = title + " · 연결됨";
+
+            message.textContent =
+              file.name +
+              " 연결 완료. 기존 요약에 반영하려면 다시 요약하세요.";
+          } catch (error) {
+            if (version !== loadVersions[type]) return;
+
+            disconnect();
+
+            message.textContent =
+              "연결 실패: " + error.message;
+          }
+        };
+      });
+
+      // ──────────────────────────────
+      // 실제 집계 카드·비교 막대
+      // ──────────────────────────────
+
+      function addBar(
+        parent,
+        label,
+        count,
+        pairs,
+        color
+      ) {
+        const card = document.createElement("div");
+        card.className = "stat";
+
+        addText(card, "div", label);
+
+        const rate = count / pairs * 100;
+
+        addText(
+          card,
+          "div",
+          `${count}/${pairs}건 · ${rate.toFixed(1)}%`,
+          "stat-number"
+        );
+
+        const track = document.createElement("div");
+        track.className = "track";
+        track.setAttribute("aria-hidden", "true");
+
+        const fill = document.createElement("div");
+        fill.className = "fill";
+        fill.style.width = rate + "%";
+        fill.style.background = color;
+
+        track.appendChild(fill);
+        card.appendChild(track);
+        parent.appendChild(card);
+
+        const reducedMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches;
+
+        if (!reducedMotion && typeof fill.animate === "function") {
+          fill.animate(
+            [
+              { width: "0%" },
+              { width: rate + "%" }
+            ],
+            {
+              duration: 380,
+              easing: "ease-out"
+            }
+          );
+        }
+      }
+
+      function updateEvidence() {
+        const group =
+          mode === "detail" && selectedPart >= 0
+            ? parts[selectedPart].name
+            : "";
+
+        const key = [
+          mode,
+          group,
+          groupFile,
+          groupData.size
+        ].join("|");
+
+        if (key === evidenceKey) return;
+
+        evidenceKey = key;
+
+        const container = $("evidence");
+        container.replaceChildren();
+
+        addText(
+          container,
+          "small",
+          "과거 집계 · 실시간 수신 아님"
+        );
+
+        $("groupStatus").textContent =
+          groupData.size > 0
+            ? "그룹 집계 연결됨"
+            : "그룹 집계 미연결";
+
+        if (!groupData.size) {
+          addText(
+            container,
+            "p",
+            "위쪽에서 그룹 집계 CSV를 연결하세요.",
+            "muted"
+          );
+          return;
+        }
+
+        if (!group) {
+          addText(
+            container,
+            "p",
+            "냉동기 내부 그룹을 선택하세요.",
+            "muted"
+          );
+          return;
+        }
+
+        const row = groupData.get(group);
+
+        if (!row) {
+          addText(container, "p", "해당 그룹 집계 없음");
+          return;
+        }
+
+        addBar(
+          container,
+          "종합알람 전 분석창",
+          row.failureCount,
+          row.pairs,
+          "#efa966"
+        );
+
+        addBar(
+          container,
+          "매칭 정상 대조 창",
+          row.normalCount,
+          row.pairs,
+          "#65cfff"
+        );
+
+        const difference =
+          (row.failureCount - row.normalCount) /
+          row.pairs * 100;
+
+        let interpretation;
+
+        if (difference < 0) {
+          interpretation =
+            "정상 대조에서 " +
+            Math.abs(difference).toFixed(1) +
+            "%p 더 자주 관찰됨";
+        } else if (difference > 0) {
+          interpretation =
+            "알람 전 창에서 " +
+            difference.toFixed(1) +
+            "%p 더 자주 관찰됨";
+        } else {
+          interpretation =
+            "두 분석창의 검출 비율이 같음";
+        }
+
+        addText(container, "p", interpretation);
+
+        addText(
+          container,
+          "p",
+          difference <= 0
+            ? "정상에서도 흔한 이상입니다. 이 정보만으로 고장을 판단할 수 없습니다."
+            : "알람 전 창에서 더 자주 관찰됐지만 현재 고장이나 원인을 확정하지 않습니다.",
+          "muted"
+        );
+
+        const sourceDetails =
+          document.createElement("details");
+
+        addText(
+          sourceDetails,
+          "summary",
+          "출처·조회 정보"
+        );
+
+        addText(
+          sourceDetails,
+          "p",
+          groupFile +
+          " · 화면 조회 " +
+          new Date().toLocaleTimeString("ko-KR") +
+          " · 센서 수신 시각 아님",
+          "source"
+        );
+
+        addText(
+          sourceDetails,
+          "p",
+          "창 단위 과거 집계이며 현재 고장 확률이나 180초 조기경보율이 아닙니다.",
+          "muted"
+        );
+
+        container.appendChild(sourceDetails);
+      }
+
+      function renderSensor() {
+        const container = $("sensorEvidence");
+        container.replaceChildren();
+
+        if (mode !== "detail" || selectedPart < 0) return;
+
+        const group = parts[selectedPart].name;
+        const sensorName = $("sensorSelect").value;
+
+        const row = sensorData.find(item => {
+          return (
+            item.group === group &&
+            item.sensor === sensorName
+          );
+        });
+
+        if (!row) return;
+
+        addText(
+          container,
+          "p",
+          row.sensor,
+          "source"
+        );
+
+        const grid = document.createElement("div");
+        grid.className = "two";
+
+        const comparisons = [
+          [
+            "전체 분석 구간",
+            row.failureCount,
+            row.normalCount
+          ],
+          [
+            "알람 기준 180초 이전",
+            row.failureEarly,
+            row.normalEarly
+          ]
+        ];
+
+        comparisons.forEach(([title, failure, normal]) => {
+          const card = document.createElement("section");
+
+          addText(card, "h3", title);
+
+          addBar(
+            card,
+            "알람 전 창",
+            failure,
+            row.pairs,
+            "#efa966"
+          );
+
+          addBar(
+            card,
+            "매칭 정상 대조 창",
+            normal,
+            row.pairs,
+            "#65cfff"
+          );
+
+          grid.appendChild(card);
+        });
+
+        container.appendChild(grid);
+
+        addText(
+          container,
+          "p",
+          "건수 ÷ 매칭 쌍 수로 계산합니다. 정상창의 기준 시점은 대응 비교 시점이며 실제 알람이 아닙니다. 현재 센서값·고장 확률·시간당 오경보율이 아닙니다.",
+          "muted"
+        );
+
+        addText(
+          container,
+          "p",
+          "출처: " + sensorFile,
+          "muted source"
+        );
+      }
+
+      $("sensorSelect").onchange = renderSensor;
+
+      function updateSensor() {
+        const group =
+          mode === "detail" && selectedPart >= 0
+            ? parts[selectedPart].name
+            : "";
+
+        const key = [
+          group,
+          mode,
+          sensorFile,
+          sensorData.length
+        ].join("|");
+
+        if (key === sensorKey) return;
+
+        sensorKey = key;
+
+        $("sensorSelect").replaceChildren();
+        $("sensorEvidence").replaceChildren();
+        $("sensorSelect").hidden = true;
+
+        if (!sensorData.length) {
+          $("sensorContext").textContent =
+            "위쪽에서 센서 집계 CSV를 연결하세요.";
+          return;
+        }
+
+        if (!group) {
+          $("sensorContext").textContent =
+            "냉동기 내부 그룹을 선택하세요.";
+          return;
+        }
+
+        const rows = sensorData
+          .filter(row => row.group === group)
+          .sort((a, b) =>
+            a.sensor.localeCompare(b.sensor)
+          );
+
+        $("sensorContext").textContent =
+          `${group} · ${rows.length}개 센서 · ` +
+          "이름순이며 중요도 순위가 아닙니다.";
+
+        rows.forEach(row => {
+          const option = addText(
+            $("sensorSelect"),
+            "option",
+            row.sensor
+          );
+
+          option.value = row.sensor;
+        });
+
+        $("sensorSelect").hidden = rows.length === 0;
+
+        renderSensor();
+      }
+
+      // ──────────────────────────────
+      // 현재 단계 요약
+      // ──────────────────────────────
+
+      function currentStage() {
+        return Math.min(
+          stages.length - 1,
+          Math.floor(elapsed / duration)
+        );
+      }
+
+      function getObservations(stage) {
+        const count = Math.max(
+          0,
+          Math.min(parts.length, stage - 2)
+        );
+
+        return parts.slice(0, count).map(part => ({
+          group: part.name,
+          time: part.time,
+          secondsBeforeAlarm: part.lead,
+          synthetic: true
+        }));
+      }
+
+      function makeSnapshot() {
+        playing = false;
+
+        const stage = currentStage();
+        const observations = getObservations(stage);
+        const stateSelect = $("operatingState");
+
+        const sequence = normalizeSequence(
+          observations.map(item => item.group).join(" -> ")
+        );
+
+        let sequenceReference = {
+          status: stage < 6 ? "pending" : "disconnected",
+          sequence
+        };
+
+        if (stage >= 6 && sequenceData) {
+          const match = sequenceData.rows.get(sequence);
+
+          sequenceReference = {
+            status: match ? "matched" : "not_found",
+            sequence,
+            sourceFile: sequenceData.fileName,
+            failureTotal: sequenceData.failureTotal,
+            normalTotal: sequenceData.normalTotal,
+            matchingRule: "EXACT_COMPLETE_SEQUENCE",
+            operatingStateFiltered: false,
+
+            ...(match ? {
+              failureCount: match.failureCount,
+              normalCount: match.normalCount
+            } : {})
+          };
+        }
+
+        snapshot = {
+          eventId: "DEMO-001",
+          dataMode: "SIMULATION",
+          capturedAt: new Date().toISOString(),
+          playbackSeconds: elapsed / 1000,
+          stageIndex: stage,
+          stageTitle: stages[stage][0],
+          alarmOccurred: stage >= 6,
+          alarmTime: stage >= 6 ? "15:12:40" : null,
+
+          observations,
+
+          operatingContext: {
+            value: stateSelect.value,
+            label:
+              stateSelect.options[
+                stateSelect.selectedIndex
+              ].text,
+            source: "USER_SELECTED_SIMULATION",
+            actualStateVerified: false
+          },
+
+          normalReference: {
+            connected: groupData.size > 0,
+            sourceFile: groupFile || null,
+            operatingStateFiltered: false,
+
+            rows: observations.map(observation => {
+              const row = groupData.get(
+                observation.group
+              );
+
+              if (!row) {
+                return {
+                  group: observation.group,
+                  available: false
+                };
+              }
+
+              return {
+                group: observation.group,
+                available: true,
+                normalCount: row.normalCount,
+                pairs: row.pairs
+              };
+            })
+          },
+
+          sequenceReference
+        };
+
+        renderSnapshot();
+
+        $("recordMessage").textContent =
+          "현재 단계의 요약을 생성했습니다. 아직 저장하지 않았습니다.";
+      }
+
+      function renderSnapshot() {
+        const container = $("summaryOutput");
+        container.replaceChildren();
+
+        addText(container, "h3", "알람 상황");
+
+        addText(
+          container,
+          "p",
+          snapshot.alarmOccurred
+            ? "15:12:40 · 가상 종합 알람"
+            : "종합 알람 발생 전 단계"
+        );
+
+        addText(
+          container,
+          "p",
+          snapshot.stageTitle
+        );
+
+        addText(
+          container,
+          "p",
+          "알람 당시 운전 상태: " +
+          (snapshot.operatingContext?.label || "미확인") +
+          " [가상 설정]"
+        );
+
+        addText(
+          container,
+          "p",
+          "실제 데이터에서 판정하지 않았으며 과거 집계도 상태별로 필터링하지 않습니다.",
+          "muted"
+        );
+
+        addText(
+          container,
+          "h3",
+          "현재 단계까지의 가상 관찰"
+        );
+
+        if (!snapshot.observations?.length) {
+          addText(container, "p", "관찰 기록 없음");
+        } else {
+          snapshot.observations.forEach(item => {
+            addText(
+              container,
+              "p",
+              `${item.time} · ${item.group} · ` +
+              `알람 ${item.secondsBeforeAlarm}초 전`
+            );
+          });
+        }
+
+        addText(
+          container,
+          "h3",
+          "정상 대조에서도 얼마나 관찰됐나?"
+        );
+
+        const normal = snapshot.normalReference;
+
+        if (!normal?.connected) {
+          addText(
+            container,
+            "p",
+            "그룹 집계 미연결 또는 이전 기록에 정보 없음"
+          );
+        } else if (!normal.rows.length) {
+          addText(
+            container,
+            "p",
+            "비교할 관찰 그룹 없음"
+          );
+        } else {
+          normal.rows.forEach(row => {
+            addText(
+              container,
+              "p",
+              row.available
+                ? `${row.group}: ${row.normalCount}/` +
+                  `${row.pairs}건 · ` +
+                  `${(
+                    row.normalCount / row.pairs * 100
+                  ).toFixed(1)}%`
+                : row.group + ": 집계 없음"
+            );
+          });
+
+          addText(
+            container,
+            "p",
+            "출처: " +
+            normal.sourceFile +
+            " · 창 단위 집계이며 전체 운영시간 빈도가 아닙니다.",
+            "muted source"
+          );
+        }
+
+        addText(
+          container,
+          "h3",
+          "동일 관찰 순서의 과거 집계"
+        );
+
+        const sequence = snapshot.sequenceReference;
+
+        if (!sequence) {
+          addText(
+            container,
+            "p",
+            "이전 기록에 정보 없음"
+          );
+        } else if (sequence.status === "pending") {
+          addText(
+            container,
+            "p",
+            "진행 중인 순서입니다. 알람 이후 최종 시퀀스를 비교합니다."
+          );
+        } else if (sequence.status === "disconnected") {
+          addText(
+            container,
+            "p",
+            "시퀀스 집계 미연결"
+          );
+        } else {
+          addText(
+            container,
+            "p",
+            sequence.sequence.replaceAll(" -> ", " → ")
+          );
+
+          addText(
+            container,
+            "p",
+            "기준: 전체 시퀀스 정확 일치",
+            "muted"
+          );
+
+          if (sequence.status === "matched") {
+            addText(
+              container,
+              "p",
+              `알람 전 분석창: ${sequence.failureCount}/` +
+              `${sequence.failureTotal}건 · ` +
+              `${(
+                sequence.failureCount /
+                sequence.failureTotal * 100
+              ).toFixed(1)}%`
+            );
+
+            addText(
+              container,
+              "p",
+              `정상 대조 창: ${sequence.normalCount}/` +
+              `${sequence.normalTotal}건 · ` +
+              `${(
+                sequence.normalCount /
+                sequence.normalTotal * 100
+              ).toFixed(1)}%`
+            );
+          } else {
+            addText(
+              container,
+              "p",
+              "연결한 집계에 정확히 같은 전체 순서가 없습니다."
+            );
+          }
+
+          addText(
+            container,
+            "p",
+            "출처: " + sequence.sourceFile,
+            "muted source"
+          );
+
+          addText(
+            container,
+            "p",
+            "원인·조치가 같은 사례라는 뜻이 아니며 운전 상태별 집계도 아닙니다.",
+            "muted"
+          );
+        }
+
+        addText(
+          container,
+          "p",
+          "시간 순서와 빈도는 고장 원인·점검 우선순위·조치 결과를 확정하지 않습니다. 요약은 생성 당시 스냅샷입니다.",
+          "muted"
+        );
+      }
+
+      $("capture").onclick = makeSnapshot;
+
+      // ──────────────────────────────
+      // 점검 기록 저장·복원·내보내기
+      // ──────────────────────────────
+
+      const storageKey =
+        "mainchiller-demo-inspection-v1";
+
+      function collectRecord() {
+        if (!snapshot) {
+          throw new Error(
+            "먼저 현재 단계 요약하기를 누르세요."
+          );
+        }
+
+        if (!$("inspectionForm").reportValidity()) {
+          return null;
+        }
+
+        const finding = $("finding").value;
+        const component = $("component").value;
+
+        if (finding === "confirmed" && !component) {
+          throw new Error("확인된 부위를 선택하세요.");
+        }
+
+        if (finding !== "confirmed" && component) {
+          throw new Error(
+            "고장 미확인 상태에서는 부위를 미확인으로 두세요."
+          );
+        }
+
+        return {
+          schemaVersion: 1,
+          eventId: "DEMO-001",
+          simulationOnly: true,
+          recordedAt: new Date().toISOString(),
+
+          observationReport: snapshot,
+
+          inspection: {
+            finding,
+            confirmedComponent: component || null,
+            action: $("action").value,
+            chargingImpact: $("impact").value,
+            downtimeMinutes:
+              $("downtime").value === ""
+                ? null
+                : Number($("downtime").value),
+            note: $("note").value.trim(),
+            demoAcknowledged: true
+          },
+
+          interpretation:
+            "관찰 순서는 원인·점검 우선순위 확정이 아님"
+        };
+      }
+
+      $("inspectionForm").onsubmit = event => {
+        event.preventDefault();
+
+        try {
+          const record = collectRecord();
+
+          if (!record) return;
+
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify(record)
+          );
+
+          $("recordMessage").textContent =
+            "이 브라우저에 가상 기록 저장 완료. 서버 전송 없음.";
+        } catch (error) {
+          $("recordMessage").textContent =
+            "저장 실패: " + error.message;
+        }
+      };
+
+      $("loadRecord").onclick = () => {
+        try {
+          const raw = localStorage.getItem(storageKey);
+
+          if (!raw) {
+            throw new Error("저장된 기록이 없습니다.");
+          }
+
+          const record = JSON.parse(raw);
+
+          if (
+            record.schemaVersion !== 1 ||
+            record.eventId !== "DEMO-001" ||
+            record.simulationOnly !== true ||
+            !record.observationReport ||
+            !record.inspection
+          ) {
+            throw new Error("지원하지 않는 형식입니다.");
+          }
+
+          const candidate = record.observationReport;
+
+          if (!Array.isArray(candidate.observations)) {
+            throw new Error("관찰 기록 형식 오류입니다.");
+          }
+
+          snapshot = candidate;
+          playing = false;
+
+          const inspection = record.inspection;
+
+          const values = {
+            finding: inspection.finding,
+            component:
+              inspection.confirmedComponent || "",
+            action: inspection.action,
+            impact: inspection.chargingImpact,
+            downtime:
+              inspection.downtimeMinutes ?? "",
+            note: inspection.note || "",
+            operatingState:
+              snapshot.operatingContext?.value || "unknown"
+          };
+
+          Object.entries(values).forEach(([id, value]) => {
+            $(id).value = value;
+          });
+
+          if ($("operatingState").selectedIndex < 0) {
+            $("operatingState").value = "unknown";
+          }
+
+          $("demoConsent").checked = false;
+
+          renderSnapshot();
+
+          $("recordMessage").textContent =
+            "저장 당시 기록을 불러왔습니다. 현재 3D 단계와 다를 수 있습니다.";
+        } catch (error) {
+          $("recordMessage").textContent =
+            "불러오기 실패: " + error.message;
+        }
+      };
+
+      $("exportRecord").onclick = () => {
+        try {
+          const record = collectRecord();
+
+          if (!record) return;
+
+          const blob = new Blob(
+            [JSON.stringify(record, null, 2)],
+            {
+              type: "application/json;charset=utf-8"
+            }
+          );
+
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+
+          link.href = url;
+          link.download =
+            "DEMO-001_simulation_inspection.json";
+
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+          }, 1000);
+
+          $("recordMessage").textContent =
+            "가상 기록 JSON 다운로드 요청 완료.";
+        } catch (error) {
+          $("recordMessage").textContent =
+            "내보내기 실패: " + error.message;
+        }
+      };
+
+      // ──────────────────────────────
+      // 이름표·화면 갱신
+      // ──────────────────────────────
+
+      const projected = new THREE.Vector3();
+
+      function updateLabels() {
+        const width = $("view").clientWidth;
+        const height = $("view").clientHeight;
+
+        labels.forEach(label => {
+          label.element.hidden = !label.parent.visible;
+
+          if (label.element.hidden) return;
+
+          label.object.getWorldPosition(projected);
+          projected.add(label.offset).project(camera);
+
+          label.element.hidden =
+            projected.z < -1 ||
+            projected.z > 1 ||
+            Math.abs(projected.x) > 1.05 ||
+            Math.abs(projected.y) > 1.05;
+
+          if (label.element.hidden) return;
+
+          const margin = Math.min(90, width / 2);
+
+          const x = Math.max(
+            margin,
+            Math.min(
+              width - margin,
+              (projected.x + 1) * width / 2
+            )
+          );
+
+          const y = Math.max(
+            60,
+            Math.min(
+              height - 18,
+              (1 - projected.y) * height / 2
+            )
+          );
+
+          label.element.style.left = x + "px";
+          label.element.style.top = y + "px";
+
+          const selected =
+            (
+              label.kind === "part" &&
+              label.index === selectedPart
+            ) ||
+            (
+              label.kind === "equipment" &&
+              label.index === selectedEquipment
+            );
+
+          label.element.style.borderColor =
+            selected ? "#81e4ff" : "#42657b";
+        });
+      }
+
+      function applyStage(stageIndex) {
+        const stage = stages[stageIndex];
+
+        if (stage[2] === "station") {
+          if (stage[3] >= 0) {
+            focusEquipment(stage[3]);
+          } else {
+            showStation();
+          }
+        } else if (stage[3] >= 0) {
+          focusPart(stage[3]);
+        } else {
+          showDetail();
+        }
+      }
+
+      function updateInterface(stageIndex) {
+        const stage = stages[stageIndex];
+
+        $("stepLabel").textContent =
+          `STEP ${stageIndex + 1} / ${stages.length}`;
+
+        $("stageTitle").textContent = stage[0];
+        $("stageText").textContent = stage[1];
+
+        $("play").textContent =
+          playing
+            ? "일시정지"
+            : elapsed >= total
+              ? "다시 재생"
+              : "재생";
+
+        $("viewTitle").textContent =
+          (
+            mode === "station"
+              ? "충전소 전체 · 개념 배치"
+              : "냉동기 내부 · 분석 그룹 개념도"
+          ) +
+          (
+            stageIndex >= 6
+              ? " · 가상 종합 알람"
+              : ""
+          );
+
+        $("progressFill").style.width =
+          elapsed / total * 100 + "%";
+
+        if (mode === "detail") {
+          if (selectedPart >= 0) {
+            $("selectedName").textContent =
+              parts[selectedPart].name;
+
+            $("selectedDescription").textContent =
+              parts[selectedPart].description;
+          } else {
+            $("selectedName").textContent =
+              "냉동기 내부";
+
+            $("selectedDescription").textContent =
+              "분석 그룹을 선택하세요. 실제 배관도가 아닙니다.";
+          }
+        } else if (selectedEquipment >= 0) {
+          $("selectedName").textContent =
+            equipment[selectedEquipment].name;
+
+          $("selectedDescription").textContent =
+            equipment[selectedEquipment].description;
+        } else {
+          $("selectedName").textContent =
+            "충전소 전체";
+
+          $("selectedDescription").textContent =
+            "설비를 선택해 탐색하세요.";
+        }
+
+        [...$("equipmentList").children].forEach(
+          (button, index) => {
+            button.classList.toggle(
+              "active",
+              index === selectedEquipment
+            );
+          }
+        );
+
+        [...$("timeline").children].forEach(
+          (button, index) => {
+            button.classList.toggle(
+              "active",
+              index === stageIndex
+            );
+          }
+        );
+
+        const observations = getObservations(stageIndex);
+        const logKey = observations.length.toString();
+
+        if (
+          $("observationLog").dataset.key !== logKey
+        ) {
+          $("observationLog").dataset.key = logKey;
+          $("observationLog").replaceChildren();
+
+          if (!observations.length) {
+            addText(
+              $("observationLog"),
+              "li",
+              "아직 가상 관찰 없음"
+            );
+          } else {
+            observations.forEach(item => {
+              addText(
+                $("observationLog"),
+                "li",
+                `${item.time} · ${item.group} · ` +
+                `알람 ${item.secondsBeforeAlarm}초 전 · 가상 설정`
+              );
+            });
+          }
+        }
+
+        stationPickables.forEach(object => {
+          const index = object.userData.equipment;
+
+          if (index === selectedEquipment) {
+            object.material.color.setHex(0x54caff);
+          } else if (
+            index === 0 &&
+            stageIndex >= 3
+          ) {
+            object.material.color.setHex(0xecad62);
+          } else {
+            object.material.color.copy(
+              object.userData.baseColor
+            );
+          }
+        });
+
+        partMeshes.forEach((object, index) => {
+          object.material.color.setHex(
+            index === selectedPart
+              ? 0x54caff
+              : stageIndex >= index + 3
+                ? 0xecad62
+                : 0x54758e
+          );
+        });
+      }
+      // ─────────────────────────────────────────────
+// 최종 보완
+// 1. 선택 대상과 사건 단계 구분
+// 2. 요약 변경 감지 및 저장 방지
+// 3. 집계 표본 수 불일치 안내
+// ─────────────────────────────────────────────
+
+// 같은 브라우저 세션에서 데이터 객체가 교체됐는지 구분합니다.
+// 저장된 파일의 내용·버전이 동일하다는 것을 보증하는 값은 아닙니다.
+const reviewSessionId =
+  Date.now().toString(36) +
+  "-" +
+  Math.random().toString(36).slice(2);
+
+const reviewObjectIds = new WeakMap();
+let nextReviewObjectId = 1;
+
+function getReviewObjectId(object) {
+  if (!object) return null;
+
+  if (!reviewObjectIds.has(object)) {
+    reviewObjectIds.set(object, nextReviewObjectId++);
+  }
+
+  return reviewObjectIds.get(object);
+}
+
+// 그룹 선택은 제외합니다.
+// 그룹 조회만 바꿨다고 사건 요약이 오래된 것은 아니기 때문입니다.
+function getCurrentReviewContext() {
+  return JSON.stringify({
+    session: reviewSessionId,
+    stage: currentStage(),
+    operatingState: $("operatingState").value,
+
+    groupData: getReviewObjectId(groupData),
+    groupFile,
+
+    sensorData: getReviewObjectId(sensorData),
+    sensorFile,
+
+    sequenceData: getReviewObjectId(sequenceData)
+  });
+}
+
+// ── A. 선택 대상 / 사건 단계 구분 ──
+
+const explorationGuide = document.createElement("p");
+
+explorationGuide.className = "muted";
+explorationGuide.textContent =
+  "설비·그룹 선택은 조회 대상만 바꿉니다. " +
+  "관찰 기록과 요약은 아래 사건 타임라인 단계 기준입니다.";
+
+$("timeline").insertAdjacentElement(
+  "beforebegin",
+  explorationGuide
+);
+
+const eventContextBox = document.createElement("div");
+
+eventContextBox.style.cssText = `
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #365a73;
+  border-radius: 8px;
+  background: #0a1726;
+  font-size: 12px;
+`;
+
+const selectedContextLine = document.createElement("div");
+const eventContextLine = document.createElement("div");
+
+eventContextBox.append(
+  selectedContextLine,
+  eventContextLine
+);
+
+$("selectedName").insertAdjacentElement(
+  "afterend",
+  eventContextBox
+);
+
+// 요약 버튼 옆에 사건 단계 바로가기 추가
+const goToAlarmButton = document.createElement("button");
+
+goToAlarmButton.type = "button";
+goToAlarmButton.textContent = "종합 알람 단계로 이동";
+
+$("capture").insertAdjacentElement(
+  "afterend",
+  goToAlarmButton
+);
+
+goToAlarmButton.addEventListener("click", () => {
+  playing = false;
+  elapsed = 6 * duration;
+
+  // 바로 적용해 화면과 내부 사건 단계를 일치시킵니다.
+  lastStage = 6;
+  applyStage(6);
+
+  updateInterface(6);
+  updateSummaryFreshness();
+});
+
+// ── B. 요약 최신 여부 표시 ──
+
+const summaryFreshnessBox = document.createElement("div");
+
+summaryFreshnessBox.setAttribute("role", "status");
+summaryFreshnessBox.setAttribute("aria-live", "polite");
+
+summaryFreshnessBox.style.cssText = `
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid #365a73;
+  border-radius: 8px;
+  color: #b9d9ed;
+  background: #102337;
+  font-size: 12px;
+`;
+
+$("summaryOutput").insertAdjacentElement(
+  "beforebegin",
+  summaryFreshnessBox
+);
+
+const saveRecordButton =
+  $("inspectionForm").querySelector('button[type="submit"]');
+
+function isSummaryOutdated() {
+  if (!snapshot) return false;
+
+  // 이전 형식 또는 다른 접속에서 불러온 기록은
+  // 현재 파일·설정과의 일치 여부를 검증할 수 없습니다.
+  if (!snapshot.reviewContextToken) return true;
+
+  return (
+    snapshot.reviewContextToken !==
+    getCurrentReviewContext()
+  );
+}
+
+function setTextIfChanged(element, value) {
+  if (element.textContent !== value) {
+    element.textContent = value;
+  }
+}
+
+function updateSummaryFreshness() {
+  const stage = currentStage();
+
+  let selectedLabel = "충전소 전체";
+
+  if (mode === "detail") {
+    selectedLabel =
+      selectedPart >= 0
+        ? parts[selectedPart].name
+        : "냉동기 내부 전체";
+  } else if (selectedEquipment >= 0) {
+    selectedLabel = equipment[selectedEquipment].name;
+  }
+
+  setTextIfChanged(
+    selectedContextLine,
+    "선택 대상: " + selectedLabel
+  );
+
+  setTextIfChanged(
+    eventContextLine,
+    "사건 단계: " +
+    stages[stage][0] +
+    (stage >= 6 ? " · 가상 알람 발생 후" : " · 가상 알람 발생 전")
+  );
+
+  if (!snapshot) {
+    setTextIfChanged(
+      summaryFreshnessBox,
+      "아직 요약을 생성하지 않았습니다. " +
+      "원하는 사건 단계를 선택한 뒤 ‘현재 단계 요약하기’를 누르세요."
+    );
+
+    summaryFreshnessBox.style.borderColor = "#365a73";
+    summaryFreshnessBox.style.background = "#102337";
+
+    saveRecordButton.disabled = true;
+    $("exportRecord").disabled = true;
+    return;
+  }
+
+  const outdated = isSummaryOutdated();
+
+  if (outdated) {
+    setTextIfChanged(
+      summaryFreshnessBox,
+      "현재 설정과 요약의 일치 확인이 필요합니다. " +
+      "사건 단계·운전 상태·연결 파일이 변경됐거나 저장 기록을 불러왔습니다. " +
+      "내용은 열람할 수 있지만, 저장·내보내기 전에는 다시 요약해주세요."
+    );
+
+    summaryFreshnessBox.style.borderColor = "#97713c";
+    summaryFreshnessBox.style.background = "#302719";
+  } else {
+    setTextIfChanged(
+      summaryFreshnessBox,
+      "현재 사건 단계·운전 상태·연결 파일 기준의 요약입니다. " +
+      "점검 내용을 입력한 뒤 저장할 수 있습니다."
+    );
+
+    summaryFreshnessBox.style.borderColor = "#365a73";
+    summaryFreshnessBox.style.background = "#102337";
+  }
+
+  saveRecordButton.disabled = outdated;
+  $("exportRecord").disabled = outdated;
+}
+
+// ── C. 서로 다른 집계 표본 수 확인 ──
+
+function buildSampleCompatibility() {
+  const sources = [];
+
+  if (groupData.size > 0) {
+    sources.push({
+      label: "그룹 집계",
+      file: groupFile,
+      sampleSizes: [
+        ...new Set(
+          [...groupData.values()].map(row => row.pairs)
+        )
+      ].sort((a, b) => a - b)
+    });
+  }
+
+  if (sensorData.length > 0) {
+    sources.push({
+      label: "센서 집계",
+      file: sensorFile,
+      sampleSizes: [
+        ...new Set(
+          sensorData.map(row => row.pairs)
+        )
+      ].sort((a, b) => a - b)
+    });
+  }
+
+  if (sequenceData) {
+    sources.push({
+      label: "동일 순서 집계",
+      file: sequenceData.fileName,
+      sampleSizes: [
+        ...new Set([
+          sequenceData.failureTotal,
+          sequenceData.normalTotal
+        ])
+      ].sort((a, b) => a - b),
+
+      failureTotal: sequenceData.failureTotal,
+      normalTotal: sequenceData.normalTotal
+    });
+  }
+
+  const allSizes = new Set(
+    sources.flatMap(source => source.sampleSizes)
+  );
+
+  return {
+    sources,
+    mismatch: allSizes.size > 1,
+    comparableSources: sources.length,
+    note:
+      "표본 수 일치는 분석 버전·기간·정상창 선정 방식의 일치까지 보증하지 않습니다."
+  };
+}
+
+// 기존 요약 렌더링 뒤에 표본 확인 결과를 추가합니다.
+const originalRenderSnapshot = renderSnapshot;
+
+renderSnapshot = function () {
+  originalRenderSnapshot();
+
+  const compatibility = snapshot?.sampleCompatibility;
+
+  if (compatibility) {
+    const container = document.createElement("section");
+
+    container.style.cssText = `
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid ${
+        compatibility.mismatch ? "#97713c" : "#365a73"
+      };
+      border-radius: 8px;
+      background: ${
+        compatibility.mismatch ? "#302719" : "#0a1726"
+      };
+    `;
+
+    addText(
+      container,
+      "h3",
+      "연결 집계의 표본 확인"
+    );
+
+    if (compatibility.sources.length === 0) {
+      addText(
+        container,
+        "p",
+        "연결된 집계가 없어 표본 수를 확인하지 못했습니다."
+      );
+    } else {
+      compatibility.sources.forEach(source => {
+        let description;
+
+        if (source.failureTotal !== undefined) {
+          description =
+            `${source.label}: ` +
+            `알람 전 ${source.failureTotal}개 / ` +
+            `정상 ${source.normalTotal}개 분석창`;
+        } else {
+          description =
+            source.label +
+            ": 매칭 " +
+            source.sampleSizes.join(", ") +
+            "쌍";
+        }
+
+        addText(container, "p", description);
+
+        addText(
+          container,
+          "p",
+          source.file,
+          "muted source"
+        );
+      });
+
+      if (compatibility.mismatch) {
+        addText(
+          container,
+          "p",
+          "표본 수가 서로 다릅니다. " +
+          "동일 조건의 결과로 직접 비교하지 마세요."
+        );
+      } else if (compatibility.comparableSources < 2) {
+        addText(
+          container,
+          "p",
+          "연결된 집계 종류가 하나여서 파일 간 비교는 아직 하지 못했습니다."
+        );
+      } else {
+        addText(
+          container,
+          "p",
+          "연결된 집계의 표본 수는 같습니다."
+        );
+      }
+    }
+
+    addText(
+      container,
+      "p",
+      compatibility.note,
+      "muted"
+    );
+
+    $("summaryOutput").appendChild(container);
+  }
+
+  updateSummaryFreshness();
+};
+
+// 기존 요약 생성 후 현재 설정과 표본 정보를 함께 저장합니다.
+const originalMakeSnapshot = makeSnapshot;
+
+makeSnapshot = function () {
+  originalMakeSnapshot();
+
+  snapshot.reviewContextToken =
+    getCurrentReviewContext();
+
+  snapshot.sampleCompatibility =
+    buildSampleCompatibility();
+
+  renderSnapshot();
+
+  $("recordMessage").textContent =
+    "현재 설정 기준으로 요약을 생성했습니다. " +
+    "아래 점검 내용을 입력한 뒤 저장하세요.";
+};
+
+// 앞에서 연결된 클릭 함수를 새 함수로 갱신합니다.
+$("capture").onclick = makeSnapshot;
+
+// 저장·내보내기는 최신 요약인 경우에만 허용합니다.
+const originalCollectRecord = collectRecord;
+
+collectRecord = function () {
+  if (snapshot && isSummaryOutdated()) {
+    throw new Error(
+      "현재 설정과 요약이 다릅니다. " +
+      "‘현재 단계 요약하기’를 다시 눌러주세요."
+    );
+  }
+
+  return originalCollectRecord();
+};
+
+updateSummaryFreshness();
+
+      function frame(now) {
+        const delta =
+          lastTime === null
+            ? 0
+            : Math.min(now - lastTime, 200);
+
+        lastTime = now;
+
+        if (playing && !document.hidden) {
+          elapsed +=
+            delta * Number($("speed").value);
+
+          if (elapsed >= total) {
+            if ($("loop").checked) {
+              reset();
+            } else {
+              elapsed = total;
+              playing = false;
+            }
+          }
+        }
+
+        const stageIndex = currentStage();
+
+        if (stageIndex !== lastStage) {
+          lastStage = stageIndex;
+          applyStage(stageIndex);
+        }
+
+        if (stageIndex === 7 && playing) {
+          const replayIndex = Math.min(
+            2,
+            Math.floor((elapsed % duration) / 2000)
+          );
+
+          if (selectedPart !== replayIndex) {
+            focusPart(replayIndex);
+          }
+        }
+
+        updateInterface(stageIndex);
+        updateEvidence();
+        updateSensor();
+        updateSummaryFreshness();
+
+
+        if (moving) {
+          camera.position.lerp(destination, 0.045);
+          controls.target.lerp(target, 0.045);
+
+          if (
+            camera.position.distanceTo(destination) < 0.02 &&
+            controls.target.distanceTo(target) < 0.02
+          ) {
+            moving = false;
+          }
+        }
+
+        controls.update();
+        camera.updateMatrixWorld();
+
+        updateLabels();
+
+        renderer.render(scene, camera);
+
+        requestAnimationFrame(frame);
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    start().catch(window.reportDemoError);
+  </script>
+</body>
+</html>
